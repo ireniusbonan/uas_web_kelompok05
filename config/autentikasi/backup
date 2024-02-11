@@ -1,0 +1,52 @@
+<?php
+session_start(); // Start the session
+include '../koneksi.php';
+
+try {
+    $koneksi->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    $username = $_POST['username'];
+    $password = $_POST['password'];
+
+    $query = "SELECT * FROM users WHERE username = :username AND password = :password";
+    $stmt = $koneksi->prepare($query);
+    $stmt->bindParam(':username', $username);
+    $stmt->bindParam(':password', $password);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($row) {
+        $status_user = $row['status_user'];
+        $sesion_username = $row['username'];
+        $sesion_foto = $row['foto'];
+
+        // Set the username in the session variable
+        $_SESSION['username'] = $sesion_username;
+        $_SESSION['foto'] = $sesion_foto;
+
+        // Build the response array
+        $response = array('status' => 'success', 'status_user' => $status_user);
+
+        // Redirect based on status_user using header
+        if ($status_user === 'admin') {
+            header('Location: ../../beranda.php');
+            exit();
+        } else if ($status_user === 'user') {
+            header('Location: ../../pesan_kamar.php');
+            exit();
+        } else {
+            // Redirect to a default login page if status_user is neither admin nor user
+            header('Location: ../../login.php');
+            exit();
+        }
+    } else {
+        $_SESSION['error_message'] = 'Invalid username or password.';
+        header('Location: ../../login.php');
+        exit();
+    }
+} catch (PDOException $e) {
+    $_SESSION['error_message'] = 'Koneksi Gagal: ' . $e->getMessage();
+    header('Location: ../../login.php');
+    exit();
+}
+?>
